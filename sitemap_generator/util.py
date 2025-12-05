@@ -62,7 +62,12 @@ URLSET_FOREACH = '''
 
 
 def write_tree(tree, file):
+    ET.register_namespace('', 'http://www.sitemaps.org/schemas/sitemap/0.9')
     tree.write(file, **SITEMAP_ARGS)
+    try:
+        ET._namespace_map.pop('http://www.sitemaps.org/schemas/sitemap/0.9')
+    except KeyError:
+        print('No default namespace')
 
 
 def get_smi():
@@ -140,7 +145,7 @@ def parse(filename: Path, n: int = 50000) -> list:
     with filename.open('r') as fh:
         csv_reader = csv.reader(fh)
         headers = [h.strip() for h in next(csv_reader)]  # noqa
-        lines = [line for line in csv_reader]
+        lines = [line for line in csv_reader if line]
         return chunkify(lines, n)
 
 

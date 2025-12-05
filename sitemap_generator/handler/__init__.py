@@ -27,54 +27,27 @@
 #
 # =================================================================
 
-name: "Sitemap Generator"
+'''Handler classs'''
 
-description: "Generate Sitemap in GitHub Actions"
+import click
+from pathlib import Path
 
-branding:
-  icon: server
-  color: purple
+from sitemap_generator.handler.filesystem import FileSystemHandler
+from sitemap_generator.util import OPTION_VERBOSITY
 
-inputs:
-  namespace_dir:
-    description: "Filepath to load data from"
-    required: true
-    default: "./namespaces"
-  sitemap_dir:
-    description: "Directory for sitemap output"
-    required: true
-    default: "./sitemap"
-  source_repo:
-    description: "Source repository"
-    required: true
-    default: "geoconnex.us"
-  source_repo_path:
-    description: "Filepath to git lastmod from"
-    required: true
-    default: "namespaces"
-outputs:
-  sitemap:
-    description: "Sitemap folder"
-runs:
-  using: "composite"
-  steps:
-    - shell: bash
-      env:
-        SOURCE_REPO: ${{ inputs.source_repo }}
-        SOURCE_REPO_PATH: ${{ inputs.source_repo_path }}
-        SITEMAP_DIR: ${{ inputs.sitemap_dir }}
-      run: |
-        pip3 install git+https://github.com/cgs-earth/sitemap-generator.git
-        sitemap-generator run ${{ inputs.namespace_dir }}
 
-    - name: Zip sitemap
-      uses: vimtor/action-zip@v1
-      with:
-        files: ${{ inputs.sitemap_dir }}
-        dest: sitemap.zip
+@click.command()
+@click.pass_context
+@OPTION_VERBOSITY
+@click.argument('filepath', type=click.Path())
+@click.option('-s', '--uri_stem', type=str, default='https://geoconnex.us/',
+              help='uri stem to be removed from short url for keyword')
+def run(ctx, verbosity, filepath, uri_stem):
+    filepath = Path(filepath)
+    if filepath.is_dir():
+        handler = FileSystemHandler(filepath, uri_stem)
+        handler.handle()
 
-    - name: Archive Sitemap
-      uses: actions/upload-artifact@v4
-      with:
-        name: sitemap
-        path: sitemap.zip
+
+if __name__ == '__main__':
+    run()
